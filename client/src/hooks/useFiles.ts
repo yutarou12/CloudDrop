@@ -10,15 +10,24 @@ export function useFiles() {
   const [, setTick] = useState<number>(0);
 
   const isFetchingRef = useRef(false);
-  const pendingRefreshRef = useRef(false);
+  const lastFetchTimeRef = useRef(0);
+  const filesRef = useRef<FileSummary[]>([]);
+  filesRef.current = files;
 
-  // ファイル一覧＆サーバー情報取得
+  // ファイル一覧＆サーバー情報取得（最低1.5秒のスロットリングで連続多重実行を防止）
   const refresh = useCallback(async () => {
+    const now = Date.now();
+    // 1.5秒以内の連続フェッチはスキップ（iOS Safari等での暴走防止）
+    if (now - lastFetchTimeRef.current < 1500) {
+      return;
+    }
+
     if (isFetchingRef.current) {
-      pendingRefreshRef.current = true;
       return;
     }
     isFetchingRef.current = true;
+    lastFetchTimeRef.current = now;
+
     try {
       const [fileList, info] = await Promise.all([
         fetchFiles(),
@@ -32,10 +41,6 @@ export function useFiles() {
     } finally {
       setLoading(false);
       isFetchingRef.current = false;
-      if (pendingRefreshRef.current) {
-        pendingRefreshRef.current = false;
-        refresh();
-      }
     }
   }, []);
 
@@ -45,32 +50,56 @@ export function useFiles() {
   }, [refresh]);
 
   // Server-Sent Events (SSE) によるリアルタイム同期
+  // ※ iOS Safari等で自己署名証明書時にEventSourceがクラッシュするのを防ぐ安全装置付き
   useEffect(() => {
     let eventSource: EventSource | null = null;
+    let sseErrorCount = 0;
+    let fallbackToPollingOnly = false;
 
-    try {
-      eventSource = new EventSource('/api/events');
+    // 接続試行関数
+    const connectSSE = () => {
+      if (fallbackToPollingOnly || typeof EventSource === 'undefined') return;
 
-      eventSource.addEventListener('file-change', () => {
-        // ファイル追加・削除・期限切れ通知を受け取ったら即座に更新
-        refresh();
-      });
+      try {
+        eventSource = new EventSource('/api/events');
 
-      eventSource.onerror = () => {
-        // 切断時はブラウザが自動再接続する
-      };
-    } catch (err) {
-      console.warn('SSE接続エラー:', err);
-    }
+        eventSource.addEventListener('file-change', () => {
+          refresh();
+        });
+
+        eventSource.onerror = () => {
+          sseErrorCount++;
+          // エラーが連続した場合はSafariのクラッシュを防ぐためSSEを切断し、定期ポーリングのみに移行
+          if (sseErrorCount >= 3) {
+            console.warn('[SSE] エラーが連続したためSSEを切断し、安全な定期ポーリングに切り替えます。');
+            fallbackToPollingOnly = true;
+            if (eventSource) {
+              eventSource.close();
+              eventSource = null;
+            }
+          }
+        };
+
+        eventSource.onopen = () => {
+          sseErrorCount = 0; // 接続成功でカウンターリセット
+        };
+      } catch (err) {
+        console.warn('SSE接続初期化スキップ:', err);
+        fallbackToPollingOnly = true;
+      }
+    };
+
+    connectSSE();
 
     return () => {
       if (eventSource) {
         eventSource.close();
+        eventSource = null;
       }
     };
   }, [refresh]);
 
-  // フォールバック用の定期ポーリング (5秒毎)
+  // 定期ポーリング（5秒間隔で安全に更新）
   useEffect(() => {
     const timer = setInterval(() => {
       refresh();
@@ -78,32 +107,26 @@ export function useFiles() {
     return () => clearInterval(timer);
   }, [refresh]);
 
-  // 画面復帰時（タブ切り替えや復帰）の即時再取得
+  // 画面復帰時（タブ切り替えやSafari復帰）の安全な再取得（focusイベントはSafari暴走の原因になるため使用しない）
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         refresh();
       }
     };
-    const handleFocus = () => {
-      refresh();
-    };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleFocus);
-
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleFocus);
     };
   }, [refresh]);
 
-  // 残り時間表示の定期更新（期限到来時の即時反映）
+  // 残り時間表示の定期更新（期限到来判定）
   useEffect(() => {
     const interval = setInterval(() => {
       setTick((t) => t + 1);
       const now = Date.now();
-      const hasExpired = files.some(
+      const hasExpired = filesRef.current.some(
         (f) => new Date(f.expiresAt).getTime() <= now
       );
       if (hasExpired) {
@@ -111,30 +134,32 @@ export function useFiles() {
       }
     }, 5000);
     return () => clearInterval(interval);
-  }, [files, refresh]);
+  }, [refresh]);
 
   // アップロード成功時の即時（楽観的）追加
   const addUploadedFile = useCallback((newFile: FileSummary) => {
     setFiles((prev) => {
-      // 既に存在していなければ先頭に追加
       if (prev.some((f) => f.id === newFile.id)) return prev;
       return [newFile, ...prev];
     });
-    // その上でバックグラウンドでも確実に同期
-    refresh();
+    // 少し待ってから確実に同期
+    setTimeout(() => {
+      refresh();
+    }, 500);
   }, [refresh]);
 
   // ファイル削除
   const removeFile = useCallback(
     async (id: string) => {
-      // 楽観的更新で即座に非表示
       setFiles((prev) => prev.filter((f) => f.id !== id));
       try {
         await apiDeleteFile(id);
       } catch (err) {
         console.error('削除失敗:', err);
       } finally {
-        refresh();
+        setTimeout(() => {
+          refresh();
+        }, 500);
       }
     },
     [refresh]
