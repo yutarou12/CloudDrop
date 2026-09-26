@@ -71,3 +71,34 @@ npm run dev:client
 # バックエンド単体＆結合テスト（MIME判定、アップロード、DL、期限切れ、クリーンアップ）
 npm --workspace=server run test
 ```
+
+### 4. HTTPS化
+
+1. プライベート認証局(CA)の秘密鍵と証明書を作成
+```bash
+openssl req -x509 -new -nodes -keyout /etc/nginx/ssl/ca.key -sha256 -days 365 -out /etc/nginx/ssl/ca.crt -subj "/CN=FileTransferCA"
+```
+
+2. サーバー用の秘密鍵を作成
+```bash
+openssl genrsa -out /etc/nginx/ssl/privkey.pem 2048
+```
+
+3. サーバー用の署名要求(CSR)を作成
+```bash
+openssl req -new -key /etc/nginx/ssl/privkey.pem -out /etc/nginx/ssl/server.csr -subj "/CN=file-transfer.network"
+```
+
+4. SAN(代替名)付きでサーバー証明書を発行
+```bash
+openssl x509 -req -in /etc/nginx/ssl/server.csr \
+  -CA /etc/nginx/ssl/ca.crt -CAkey /etc/nginx/ssl/ca.key -CAcreateserial \
+  -out /etc/nginx/ssl/crt.pem -days 365 -sha256 \
+  -extfile <(echo "subjectAltName=DNS:file-transfer.network,IP:192.168.100.1")
+```
+
+5. パーミッション設定
+```bash
+sudo chmod 644 /etc/nginx/ssl/crt.pem /etc/nginx/ssl/ca.crt
+sudo chmod 600 /etc/nginx/ssl/privkey.pem /etc/nginx/ssl/ca.key
+```
