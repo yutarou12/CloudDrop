@@ -2,6 +2,9 @@
 
 同一LAN内のPC（Windows, Mac）やスマートフォン（iPhone Safari等）からブラウザで安全かつ軽快にファイルを送受信できる完全ローカルなWebファイル転送サービスです。
 
+![メイン画面](images/main-image.png)
+![ログ画面](images/log-image.png)
+
 ## 特徴
 
 - **完全ローカル**: クラウドを介さず、自宅やオフィスの同一LAN内でのみファイルを受け渡し。
