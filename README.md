@@ -1,4 +1,5 @@
-# ローカルファイル転送サービス (Local File Transfer Service)
+# CloudDrop
+旧名：ローカルファイル転送サービス (Local File Transfer Service)
 
 同一LAN内のPC（Windows, Mac）やスマートフォン（iPhone Safari等）からブラウザで安全かつ軽快にファイルを送受信できる完全ローカルなWebファイル転送サービスです。
 

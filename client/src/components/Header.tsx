@@ -62,7 +62,7 @@ export const Header: React.FC<Props> = ({
               component="h1"
               sx={{ fontWeight: 'bold', lineHeight: 1.2 }}
             >
-              ローカルファイル転送
+              CloudDrop
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.2 }}>
               <WifiIcon sx={{ fontSize: 13, color: 'text.secondary' }} />

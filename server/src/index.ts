@@ -63,7 +63,7 @@ export async function createServer() {
 }
 
 export async function main() {
-  console.log('--- ローカルファイル転送サービス起動中 ---');
+  console.log('--- CloudDropサービス起動中 ---');
 
   // 1. DB & ストレージ初期化
   initDatabase();
