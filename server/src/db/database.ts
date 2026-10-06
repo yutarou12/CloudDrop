@@ -38,6 +38,14 @@ export function initDatabase(): any {
     CREATE INDEX IF NOT EXISTS idx_files_expires_at ON files(expires_at);
     CREATE INDEX IF NOT EXISTS idx_files_status ON files(status);
 
+    CREATE TABLE IF NOT EXISTS links (
+      id TEXT PRIMARY KEY,
+      url TEXT NOT NULL,
+      createdAt TEXT NOT NULL,
+      expiresAt TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_links_expires_at ON links(expiresAt);
+
     CREATE TABLE IF NOT EXISTS logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       action TEXT NOT NULL,
@@ -167,3 +175,28 @@ export function clearAllLogs(): void {
   statement.run();
 }
 
+
+export interface LinkRecord {
+  id: string;
+  url: string;
+  createdAt: string;
+  expiresAt: string;
+}
+
+export function createLink(record: LinkRecord): void {
+  db.prepare('INSERT INTO links (id, url, createdAt, expiresAt) VALUES (?, ?, ?, ?)')
+    .run(record.id, record.url, record.createdAt, record.expiresAt);
+}
+
+export function getActiveLinks(nowIso: string): LinkRecord[] {
+  return db.prepare('SELECT * FROM links WHERE expiresAt > ? ORDER BY createdAt DESC, rowid DESC')
+    .all(nowIso) as LinkRecord[];
+}
+
+export function deleteLink(id: string): void {
+  db.prepare('DELETE FROM links WHERE id = ?').run(id);
+}
+
+export function cleanupExpiredLinks(nowIso: string = new Date().toISOString()): number {
+  return Number(db.prepare('DELETE FROM links WHERE expiresAt <= ?').run(nowIso).changes);
+}

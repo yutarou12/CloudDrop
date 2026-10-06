@@ -16,6 +16,7 @@ import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import WifiIcon from '@mui/icons-material/Wifi';
 import FolderSharedIcon from '@mui/icons-material/FolderShared';
+import LinkIcon from '@mui/icons-material/Link';
 import HistoryIcon from '@mui/icons-material/History';
 import { ViewMode, PageTab, ServerInfo } from '../types/file';
 
@@ -113,6 +114,7 @@ export const Header: React.FC<Props> = ({
               iconPosition="start"
               label="共有"
             />
+            <Tab value="links" icon={<LinkIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="リンク" />
             <Tab
               value="logs"
               icon={<HistoryIcon sx={{ fontSize: 18 }} />}
@@ -188,6 +190,7 @@ export const Header: React.FC<Props> = ({
             iconPosition="start"
             label="共有"
           />
+          <Tab value="links" icon={<LinkIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="リンク" />
           <Tab
             value="logs"
             icon={<HistoryIcon sx={{ fontSize: 18 }} />}

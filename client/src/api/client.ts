@@ -1,4 +1,4 @@
-import { FileSummary, ServerInfo, LogSummary } from '../types/file';
+import { FileSummary, ServerInfo, LogSummary, LinkSummary } from '../types/file';
 
 const API_BASE = '/api';
 
@@ -101,3 +101,26 @@ export async function clearLogs(): Promise<void> {
   }
 }
 
+
+export async function fetchLinks(): Promise<LinkSummary[]> {
+  const res = await fetch(`${API_BASE}/links`);
+  if (!res.ok) throw new Error('リンク一覧の取得に失敗しました');
+  return (await res.json()).links;
+}
+
+export async function saveLink(url: string): Promise<LinkSummary> {
+  const res = await fetch(`${API_BASE}/links`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url }),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'リンクの保存に失敗しました');
+  }
+  return res.json();
+}
+
+export async function deleteLink(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/links/${id}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error('リンクの削除に失敗しました');
+}

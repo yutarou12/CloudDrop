@@ -13,6 +13,7 @@ import { Header } from './components/Header';
 import { UploadZone } from './components/UploadZone';
 import { ListView } from './components/ListView';
 import { DeskView } from './components/DeskView';
+import { LinkView } from './components/LinkView';
 import { LogView } from './components/LogView';
 import { FileDetailModal } from './components/FileDetailModal';
 import { ConfirmDialog } from './components/ConfirmDialog';
@@ -57,7 +58,7 @@ const theme = createTheme({
 });
 
 export const App: React.FC = () => {
-  // 現在のページタブ（'transfer' | 'logs'）
+  // 現在のページタブ
   const [currentTab, setCurrentTab] = useState<PageTab>('transfer');
 
   // 表示モード（一覧 / 机上）
@@ -191,6 +192,8 @@ export const App: React.FC = () => {
                 </>
               )}
             </>
+          ) : currentTab === 'links' ? (
+            <LinkView onNotify={(message, severity) => setSnackbar({ open: true, message, severity })} />
           ) : (
             /* 操作履歴ログビュー */
             <LogView

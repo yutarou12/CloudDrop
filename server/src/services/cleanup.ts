@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { CONFIG } from '../config.js';
-import { getExpiredFiles, getAllFileRecords, deleteFileById } from '../db/database.js';
+import { getExpiredFiles, getAllFileRecords, deleteFileById, cleanupExpiredLinks } from '../db/database.js';
 import { getFilePath, removeStoredFile } from './storage.js';
 import { broadcastFileChange } from './events.js';
 
@@ -12,6 +12,7 @@ let cleanupTimer: NodeJS.Timeout | null = null;
  */
 export async function cleanupExpiredFiles(): Promise<number> {
   const nowIso = new Date().toISOString();
+  cleanupExpiredLinks(nowIso);
   const expired = getExpiredFiles(nowIso);
   let cleanedCount = 0;
 

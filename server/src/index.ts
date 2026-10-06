@@ -10,6 +10,7 @@ import { initStorage } from './services/storage.js';
 import { cleanupOrphanedFiles, cleanupExpiredFiles, startCleanupSchedule, stopCleanupSchedule } from './services/cleanup.js';
 import { filesRoutes } from './routes/files.js';
 import { healthRoutes, getLocalIpAddress } from './routes/health.js';
+import { linksRoutes } from './routes/links.js';
 import { logsRoutes } from './routes/logs.js';
 
 export async function createServer() {
@@ -39,6 +40,7 @@ export async function createServer() {
   await server.register(filesRoutes, { prefix: '/api' });
   await server.register(healthRoutes, { prefix: '/api' });
   await server.register(logsRoutes, { prefix: '/api' });
+  await server.register(linksRoutes, { prefix: '/api' });
 
   // 本番環境用：クライアント静的ファイル配信
   if (fs.existsSync(CONFIG.CLIENT_DIST_DIR)) {

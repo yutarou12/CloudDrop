@@ -25,7 +25,7 @@ export interface ServerInfo {
 }
 
 export type ViewMode = 'list' | 'desk';
-export type PageTab = 'transfer' | 'logs';
+export type PageTab = 'transfer' | 'links' | 'logs';
 
 export interface UploadTask {
   id: string;
@@ -48,3 +48,10 @@ export interface LogSummary {
   createdAt: string;
 }
 
+
+export interface LinkSummary {
+  id: string;
+  url: string;
+  createdAt: string;
+  expiresAt: string;
+}
